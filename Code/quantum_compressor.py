@@ -263,6 +263,7 @@ def build_original_circuit():
     # save the original circuit
     compressor = QuantumCompressor(num_qubits=4, input_circuit=decomposed_circ)
     compressor.save_compressed_circuit(decomposed_circ, filename='original_circuit_50.json')
+    return decomposed_circ
 
 def run_saved_circuit_on_real_device(filename, backend_name, shots):
     """
@@ -285,4 +286,7 @@ def run_saved_circuit_on_real_device(filename, backend_name, shots):
 
 # Main execution
 if __name__ == "__main__":
-    build_original_circuit()
+    decomposed_circ = build_original_circuit()
+    compressed_circuit, fidelity = train_hydrogen_compressor(num_qubits=4)
+    compressor = QuantumCompressor(num_qubits=4, input_circuit=decomposed_circ)
+    original_compressor = QuantumCompressor(num_qubits=4, input_circuit=compressed_circuit)

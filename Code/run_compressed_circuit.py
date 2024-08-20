@@ -17,10 +17,12 @@ from qiskit.synthesis import SuzukiTrotter
 # from qiskit_nature.second_q.mappers import JordanWignerMapper, QubitMapper
 from qiskit_aer import AerSimulator
 from qiskit_ibm_runtime import QiskitRuntimeService
-# from qiskit_ibm_runtime import 
+# from qiskit_ibm_runtime import
 import matplotlib.pyplot as plt
 import time
 import json
+from qiskit_experiments.framework import ParallelExperiment
+from qiskit_experiments.library import StateTomography
 
 class QuantumCompressor:
     def __init__(self, num_qubits, input_circuit):
@@ -37,17 +39,17 @@ class QuantumCompressor:
         qr = QuantumRegister(2 * self.num_qubits + 1, "q")
         cr = ClassicalRegister(1, "c")
         circuit = QuantumCircuit(qr, cr)
-        
+
         # Apply input circuit
         circuit.compose(self.input_circuit, range(self.num_qubits), inplace=True)
-        
+
         # Apply ansatz (encoder)
         circuit.compose(self.ansatz(), range(self.num_qubits), inplace=True)
-        
+
         # Second set of n qubits remains in |0> state (Identity Circuit)
-        
+
         circuit.barrier()
-        
+
         # SWAP test
         auxiliary_qubit = 2 * self.num_qubits
         circuit.h(auxiliary_qubit)
@@ -55,7 +57,7 @@ class QuantumCompressor:
             circuit.cswap(auxiliary_qubit, i, i + self.num_qubits)
         circuit.h(auxiliary_qubit)
         circuit.measure(auxiliary_qubit, cr[0])
-        
+
         return circuit
 
     def setup_qnn(self):
@@ -116,9 +118,9 @@ class QuantumCompressor:
         input_state = Statevector(self.input_circuit).data
         compressed_state = Statevector(compressed_circuit).data
         fidelity = np.abs(np.dot(input_state.conj(), compressed_state)) ** 2
-        
+
         print(f"Compression completed. Final fidelity: {fidelity:.6f}")
-        
+
         return compressed_circuit, fidelity
 
     def save_compressed_circuit(self, compressed_circuit, filename='compressed_circuit.json'):
@@ -140,7 +142,7 @@ class QuantumCompressor:
         """
         with open(filename, 'r') as f:
             circuit_data = json.load(f)
-        
+
         if 'qasm3' in circuit_data:
             # 如果文件包含 OpenQASM 3 格式的數據
             try:
@@ -155,7 +157,7 @@ class QuantumCompressor:
             # 如果文件只包含原始 QASM 格式的數據
             circuit = QuantumCircuit.from_qasm_str(circuit_data['qasm'])
             print(f"Circuit loaded from {filename} using original QASM format")
-        
+
         return circuit
 
     def run_on_real_device(self, circuit, backend_name, shots=1024):
@@ -200,12 +202,12 @@ class QuantumCompressor:
         input_state = Statevector(self.input_circuit).data
         compressed_state = Statevector(compressed_circuit).data
         fidelity = np.abs(np.dot(input_state.conj(), compressed_state)) ** 2
-        
+
         print(f"Compression completed. Final fidelity: {fidelity:.6f}")
 
         # Save the compressed circuit
         self.save_compressed_circuit(compressed_circuit)
-        
+
         return compressed_circuit, fidelity
 
 
@@ -221,7 +223,7 @@ def run_saved_circuit_on_real_device(filename, backend_name, shots):
     # Load the compressed circuit
     print("Loading compressed circuit...")
     loaded_circuit = compressor.load_compressed_circuit(filename)
-
+    # loaded_circuit.measure_all()
     # Run the loaded circuit on the real device
     print(f"Pending to {backend_name}...")
     result = compressor.run_on_real_device(loaded_circuit, backend_name, shots)
@@ -234,7 +236,7 @@ if __name__ == "__main__":
     backend = service.get_backend('ibm_kawasaki')  # Choose an available backend
     print('Connected to IBM provider.')
     result = run_saved_circuit_on_real_device(
-        filename='compressed_circuit_20.json',
+        filename='compressed_circuit_50.json',
         backend_name='ibm_kawasaki',
         shots=1024
     )
